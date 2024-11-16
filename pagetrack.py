@@ -1,15 +1,15 @@
 import os
-import pprint
 import csv
-import statistics
-from operator import itemgetter
 import pickle
-from datetime import datetime, date, timedelta
+import statistics
 from sys import argv
+from operator import itemgetter
+from datetime import date, timedelta
 
 
 LOGFILE = os.path.realpath("data/logfile.pickle")
 CSV_OUT = os.path.realpath("out")
+VIMWIKI_LOC = os.path.realpath("out/vimwiki")
 
 
 def main():
@@ -184,20 +184,17 @@ def print_average(exec_dict):
     print(f"You read an average of {avg} pages a day.")
 
 
-
 def dump_to_vimwiki(exec_dict):
-    print("Dumping to vimwiki")
-    pass
+    export_csv([VIMWIKI_LOC])
 
 
-def export_csv():
+def export_csv(args=[]):
     log = read_log()
     header = get_header_row(log)
     final_csv = [header]
-    index_dict = get_index_dict(header)
     print(header)
-    for date, day_log in log.items():
-        row = [date]
+    for date_, day_log in log.items():
+        row = [date_]
         for title in header:
             if title == "date":
                 continue
@@ -207,7 +204,13 @@ def export_csv():
                 row.append("")
         final_csv.append(row)
         print(row)
-    write_csv(final_csv)
+    if args:
+        print(f"args: {args}")
+        path = args[0]
+        print(path)
+    else:
+        path = None
+    write_csv(final_csv, path)
 
 
 def get_index_dict(header):
@@ -230,9 +233,13 @@ def get_header_row(log):
     return titles
 
 
-def write_csv(rows):
+def write_csv(rows, path=None):
     filename = f"{timestamp()}_reading_stats.csv"
-    with open(os.path.join(CSV_OUT, filename), "w+") as file:
+    if path is None:
+        path = os.path.join(CSV_OUT, filename)
+    else:
+        path = os.path.join(path, filename)
+    with open(path, "w+") as file:
         writer = csv.writer(file)
         writer.writerows(rows)
 
@@ -270,6 +277,4 @@ CMDS = {
         }
 
 if __name__ == "__main__":
-    # export_csv()
-    # main()
-    pprint.pprint(read_log())
+    main()
