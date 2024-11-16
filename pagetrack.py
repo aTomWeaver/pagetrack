@@ -9,7 +9,9 @@ def main():
         return
     args = argv[1:]
     if len(args) == 1:
-        parse_single_arg(args[0])
+        arg = args[0]
+        fn, arg = parse_single_arg(arg)
+        fn(arg)
     else:
         add_entry(args)
 
@@ -20,10 +22,16 @@ def timestamp() -> str:
 
 
 def parse_single_arg(arg):
-    if is_date(arg):
+    arg = arg.strip()
+    if arg in CMDS:
+        return (CMDS[arg], arg)
+    elif is_date(arg):
         date = get_date_obj(arg).isoformat()
-        print(date)
-    pass
+        return (print_record, date)
+    elif arg.isdigit():
+        return (add_entry, int(arg))
+    else:
+        return (print_err("unknown_cmd"), arg)
 
 
 def is_date(string):
@@ -47,20 +55,22 @@ def get_date_obj(date_arg):
     return date.fromisoformat(date_string)
 
 
-
 def add_entry(args):
+    print(f"Added record with {args} pages.")
     pass
 
 
 def print_record(args):
+    print(f"Printing record from {args}")
     pass
 
 
-def print_average(args):
+def print_average():
     pass
 
 
 def dump_to_vimwiki(args):
+    print("Dumping to vimwiki")
     pass
 
 
@@ -68,6 +78,11 @@ def zero_pad(string, total_length):
     while len(string) < total_length:
         string = "0" + string
     return string
+
+
+def print_err(type_, cmd):
+    if type_ == "unknown_cmd":
+        print(f"{cmd} is not a recognized command.")
 
 
 CMDS = {
