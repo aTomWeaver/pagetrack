@@ -8,9 +8,6 @@ from sys import argv
 LOGFILE = "data/logfile.pickle"
 
 
-master_list = []
-
-
 def main():
     if len(argv) < 2:
         print("Insufficient args.")
@@ -124,13 +121,25 @@ def execute(exec_dict):
 
 
 def add_entry(date, pagenum, title):
-    master_list.append((date, title, pagenum))
-    print(master_list)
+    print("Adding")
+    log = read_log()
+    if date not in log:
+        log[date] = {}
+    if title not in log[date]:
+        log[date][title] = pagenum
+    else:
+        log[date][title] += pagenum
+    write_pickle(log)
+    print(read_log())
 
 
-def print_record(args):
-    print(f"Printing record from {args}")
-    pass
+def print_record(date_):
+    log = read_log()
+    if date_ not in log:
+        print(f"No records from {date_}.")
+        return
+    for title, pages in log[date_].items():
+        print(f"{title}\t{pages}")
 
 
 def print_average(exec_dict):
@@ -153,7 +162,7 @@ def print_err(type_, cmd):
         print(f"{cmd} is not a recognized command.")
 
 
-def load_pickle():
+def read_log():
     if not os.path.exists(os.path.realpath(LOGFILE)):
         print(f"No log file at \"{os.path.realpath(LOGFILE)}\".")
         print(f"Creating log file at \"{os.path.realpath(LOGFILE)}\".")
@@ -174,5 +183,4 @@ CMDS = {
         }
 
 if __name__ == "__main__":
-    print(load_pickle())
-    # main()
+    main()
