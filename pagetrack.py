@@ -1,7 +1,8 @@
 import os
+import statistics
 from operator import itemgetter
 import pickle
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from sys import argv
 
 
@@ -18,10 +19,11 @@ def main():
         type_, arg = parse_arg_type(arg)
         argtype_and_arg_list.append((type_, arg))
     exec_dict = get_exec_dict(argtype_and_arg_list)
-    print(f"exec dict is {exec_dict}\n\n")
+    # print(f"exec dict is {exec_dict}\n\n")
     if exec_dict["command"] is not None:
         CMDS[exec_dict["command"]](exec_dict["command_args"])
     else:
+        print(exec_dict)
         execute(exec_dict)
 
 
@@ -52,7 +54,7 @@ def get_exec_dict(argtype_and_arg_list):
                 d["command_args"].append(arg)
             else:
                 # if no command, the string is the title
-                d["title"] = arg
+                d["title"] = arg.lower()
     return d
 
 
@@ -64,12 +66,18 @@ def parse_arg_type(arg) -> tuple:
         return ("date", get_iso_date(arg))
     elif arg.isdigit():
         return ("pagenum", int(arg))
+    elif arg[0] == "-":
+        try:
+            arg = int(arg)
+            return ("date", get_iso_date(arg))
+        except Exception:
+            return ("other", arg)
     else:
         return ("other", arg)
 
 
 def is_date(string):
-    if "-" not in string:
+    if "-" not in string or not string[0].isdigit():
         return False
     split_arg = string.split("-")
     for arg_ in split_arg:
@@ -80,6 +88,9 @@ def is_date(string):
 
 
 def get_iso_date(date_arg):
+    if type(date_arg) is int:
+        date_string = date.today() - timedelta(abs(date_arg))
+        return date_string.isoformat()
     arg_list = date_arg.strip().split("-")
     date_list = []
     if len(arg_list) < 3:
@@ -139,9 +150,15 @@ def print_record(date_):
         print(f"No records from {date_}.")
         return
     max_title_len = get_max_length(log[date_])
+    total_pages = 0
     for title, pages in log[date_].items():
         spacing = (max_title_len - len(title) + 2) * " "
         print(f"{title}{spacing}{pages}")
+        total_pages += pages
+    divider = "-" * max_title_len
+    spacing = (max_title_len - len("total:") + 2) * " "
+    print(divider)
+    print(f"\ntotal:{spacing}{total_pages}")
 
 
 def get_max_length(day_entry):
@@ -152,7 +169,16 @@ def get_max_length(day_entry):
 
 
 def print_average(exec_dict):
-    pass
+    log = read_log()
+    all_pages = []
+    for _, day_log in log.items():
+        pages_on_day = 0
+        for _, pages in day_log.items():
+            pages_on_day += pages
+        all_pages.append(pages_on_day)
+    avg = int(statistics.fmean(all_pages))
+    print(f"You read an average of {avg} pages a day.")
+
 
 
 def dump_to_vimwiki(exec_dict):
