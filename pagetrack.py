@@ -1,7 +1,11 @@
+import os
 from operator import itemgetter
 import pickle
 from datetime import datetime, date
 from sys import argv
+
+
+LOGFILE = "data/logfile.pickle"
 
 
 master_list = []
@@ -149,10 +153,26 @@ def print_err(type_, cmd):
         print(f"{cmd} is not a recognized command.")
 
 
+def load_pickle():
+    if not os.path.exists(os.path.realpath(LOGFILE)):
+        print(f"No log file at \"{os.path.realpath(LOGFILE)}\".")
+        print(f"Creating log file at \"{os.path.realpath(LOGFILE)}\".")
+        write_pickle({})
+    with open(LOGFILE, "rb") as file:
+        log = pickle.load(file)
+    return log
+
+
+def write_pickle(data):
+    with open(LOGFILE, "wb") as file:
+        pickle.dump(data, file)
+
+
 CMDS = {
         "average": print_average,
         "dump": dump_to_vimwiki,
         }
 
 if __name__ == "__main__":
-    main()
+    print(load_pickle())
+    # main()
