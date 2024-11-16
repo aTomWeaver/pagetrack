@@ -138,8 +138,17 @@ def print_record(date_):
     if date_ not in log:
         print(f"No records from {date_}.")
         return
+    max_title_len = get_max_length(log[date_])
     for title, pages in log[date_].items():
-        print(f"{title}\t{pages}")
+        spacing = (max_title_len - len(title) + 2) * " "
+        print(f"{title}{spacing}{pages}")
+
+
+def get_max_length(day_entry):
+    titles = set()
+    for title in day_entry.keys():
+        titles.add(title)
+    return len(max(titles, key=len))
 
 
 def print_average(exec_dict):
