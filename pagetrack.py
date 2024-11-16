@@ -1,4 +1,6 @@
 import os
+import pprint
+import csv
 import statistics
 from operator import itemgetter
 import pickle
@@ -6,7 +8,8 @@ from datetime import datetime, date, timedelta
 from sys import argv
 
 
-LOGFILE = "data/logfile.pickle"
+LOGFILE = os.path.realpath("data/logfile.pickle")
+CSV_OUT = os.path.realpath("out")
 
 
 def main():
@@ -68,6 +71,7 @@ def parse_arg_type(arg) -> tuple:
         return ("pagenum", int(arg))
     elif arg[0] == "-":
         try:
+            # negative value interpreted as x days ago
             arg = int(arg)
             return ("date", get_iso_date(arg))
         except Exception:
@@ -82,7 +86,7 @@ def is_date(string):
     split_arg = string.split("-")
     for arg_ in split_arg:
         if not arg_.isdigit() and arg_ != "":
-            # if arg_ is "", pass along to faile on get_iso_date
+            # if arg_ is "", pass along to fail on get_iso_date
             return False
     return True
 
@@ -186,6 +190,53 @@ def dump_to_vimwiki(exec_dict):
     pass
 
 
+def export_csv():
+    log = read_log()
+    header = get_header_row(log)
+    final_csv = [header]
+    index_dict = get_index_dict(header)
+    print(header)
+    for date, day_log in log.items():
+        row = [date]
+        for title in header:
+            if title == "date":
+                continue
+            elif title in day_log:
+                row.append(day_log[title])
+            else:
+                row.append("")
+        final_csv.append(row)
+        print(row)
+    write_csv(final_csv)
+
+
+def get_index_dict(header):
+    index_dict = {}
+    for idx, title in enumerate(header):
+        if idx == 0:
+            continue
+        else:
+            index_dict[title] = idx
+    return index_dict
+
+
+def get_header_row(log):
+    titles = ["date"]
+    for day in log.values():
+        for title in day.keys():
+            if title in titles and title != "date":
+                continue
+            titles.append(title)
+    return titles
+
+
+def write_csv(rows):
+    filename = f"{timestamp()}_reading_stats.csv"
+    with open(os.path.join(CSV_OUT, filename), "w+") as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
+
+
 def zero_pad(string, total_length):
     while len(string) < total_length:
         string = "0" + string
@@ -215,7 +266,10 @@ def write_pickle(data):
 CMDS = {
         "average": print_average,
         "dump": dump_to_vimwiki,
+        "export-csv": export_csv
         }
 
 if __name__ == "__main__":
-    main()
+    # export_csv()
+    # main()
+    pprint.pprint(read_log())
