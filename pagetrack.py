@@ -1,5 +1,5 @@
 import pickle
-from datetime import datetime
+from datetime import datetime, date
 from sys import argv
 
 
@@ -14,12 +14,15 @@ def main():
         add_entry(args)
 
 
-def timestamp():
-    return datetime.strftime(datetime.now(), "%Y-%M-%d")
+def timestamp() -> str:
+    stamp = date.today().isoformat()
+    return stamp
+
 
 def parse_single_arg(arg):
     if is_date(arg):
-        print_record(date)
+        date = get_date_obj(arg).isoformat()
+        print(date)
     pass
 
 
@@ -31,6 +34,18 @@ def is_date(string):
         if not arg_.isdigit():
             return False
     return True
+
+
+def get_date_obj(date_arg):
+    arg_list = date_arg.strip().split("-")
+    date_list = []
+    if len(arg_list) < 3:
+        date_list.append(str(date.today().year))
+    for num in arg_list:
+        date_list.append(zero_pad(num, 2))
+    date_string = "-".join(date_list)
+    return date.fromisoformat(date_string)
+
 
 
 def add_entry(args):
@@ -49,11 +64,16 @@ def dump_to_vimwiki(args):
     pass
 
 
+def zero_pad(string, total_length):
+    while len(string) < total_length:
+        string = "0" + string
+    return string
+
+
 CMDS = {
         "average": print_average,
         "dump": dump_to_vimwiki,
         }
 
 if __name__ == "__main__":
-    print(parse_single_arg("2024-11-15"))
-    # main()
+    main()
