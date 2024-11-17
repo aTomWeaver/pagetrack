@@ -13,21 +13,9 @@ CSV_OUT = os.path.realpath("out")
 VIMWIKI_LOC = os.path.realpath("out/vimwiki")
 
 
-APPDATA_MOCK = {
-        "last_read": "Capital",
-        "last_action": {
-            "type": "",
-            "title": "",
-            "pagenum": "",
-            "date": ""
-            }
-        }
-
-
-
 def main():
     if len(argv) < 2:
-        print("Insufficient args.")
+        print("Insufficient args.\n")
         return
     args = argv[1:]
     argtype_and_arg_list = []
@@ -35,11 +23,9 @@ def main():
         type_, arg = parse_arg_type(arg)
         argtype_and_arg_list.append((type_, arg))
     exec_dict = get_exec_dict(argtype_and_arg_list)
-    # print(f"exec dict is {exec_dict}\n\n")
     if exec_dict["command"] is not None:
         CMDS[exec_dict["command"]](exec_dict["command_args"])
     else:
-        print(exec_dict)
         execute(exec_dict)
 
 
@@ -118,7 +104,7 @@ def get_iso_date(date_arg):
     try:
         date_string = date.fromisoformat(date_string).isoformat()
     except ValueError:
-        print("Date given is invalid.")
+        print("Date given is invalid.\n")
         exit(1)
     return date_string
 
@@ -138,7 +124,7 @@ def execute(exec_dict):
             print_record(date)
             return
         else:
-            print("No pages given.")
+            print("No pages given.\n")
             exit()
     if title is None:
         title = read_cache()["last_read"]
@@ -181,7 +167,7 @@ def print_record(date_):
         total_pages += pages
     spacing = (max_title_len - len("total:") + 2) * " "
     print(divider)
-    print(f"total:{spacing}{total_pages}")
+    print(f"total:{spacing}{total_pages}\n")
 
 
 def get_max_length(day_entry):
@@ -254,7 +240,7 @@ def zero_pad(string, total_length):
 
 def print_err(type_, cmd):
     if type_ == "unknown_cmd":
-        print(f"{cmd} is not a recognized command.")
+        print(f"{cmd} is not a recognized command.\n")
 
 
 def print_average(exec_dict):
@@ -266,7 +252,7 @@ def print_average(exec_dict):
             pages_on_day += pages
         all_pages.append(pages_on_day)
     avg = int(statistics.fmean(all_pages))
-    print(f"You read an average of {avg} pages a day.")
+    print(f"You read an average of {avg} pages a day.\n")
 
 
 ################
