@@ -8,8 +8,21 @@ from datetime import date, timedelta
 
 
 LOGFILE = os.path.realpath("data/logfile.pickle")
+CACHE = os.path.realpath("data/cache.pickle")
 CSV_OUT = os.path.realpath("out")
 VIMWIKI_LOC = os.path.realpath("out/vimwiki")
+
+
+APPDATA_MOCK = {
+        "last_read": "Capital",
+        "last_action": {
+            "command": "",
+            "title": "",
+            "pagenum": "",
+            "date": ""
+            }
+        }
+
 
 
 def main():
@@ -129,7 +142,7 @@ def execute(exec_dict):
             exit()
     if title is None:
         # TODO: fetch last title from appdata
-        title = "Unknown Title"
+        title = "unknown title"
     if date is None:
         date = timestamp()
     add_entry(date, pagenum, title)
@@ -144,7 +157,7 @@ def add_entry(date, pagenum, title):
         log[date][title] = pagenum
     else:
         log[date][title] += pagenum
-    write_pickle(log)
+    write_log(log)
     print(read_log())
 
 
@@ -172,18 +185,6 @@ def get_max_length(day_entry):
     return len(max(titles, key=len))
 
 
-def print_average(exec_dict):
-    log = read_log()
-    all_pages = []
-    for _, day_log in log.items():
-        pages_on_day = 0
-        for _, pages in day_log.items():
-            pages_on_day += pages
-        all_pages.append(pages_on_day)
-    avg = int(statistics.fmean(all_pages))
-    print(f"You read an average of {avg} pages a day.")
-
-
 def dump_to_vimwiki(exec_dict):
     export_csv([VIMWIKI_LOC])
 
@@ -192,7 +193,6 @@ def export_csv(args=[]):
     log = read_log()
     header = get_header_row(log)
     final_csv = [header]
-    print(header)
     for date_, day_log in log.items():
         row = [date_]
         for title in header:
@@ -203,13 +203,7 @@ def export_csv(args=[]):
             else:
                 row.append("")
         final_csv.append(row)
-        print(row)
-    if args:
-        print(f"args: {args}")
-        path = args[0]
-        print(path)
-    else:
-        path = None
+    path = args[0] if args else None
     write_csv(final_csv, path)
 
 
@@ -233,15 +227,17 @@ def get_header_row(log):
     return titles
 
 
-def write_csv(rows, path=None):
-    filename = f"{timestamp()}_reading_stats.csv"
-    if path is None:
-        path = os.path.join(CSV_OUT, filename)
-    else:
-        path = os.path.join(path, filename)
-    with open(path, "w+") as file:
-        writer = csv.writer(file)
-        writer.writerows(rows)
+def default_cache():
+    default = {
+        "last_read": "unknown title",
+        "last_action": {
+            "command": None,
+            "title": None,
+            "pagenum": None,
+            "date": None
+            }
+        }
+    return default
 
 
 def zero_pad(string, total_length):
@@ -255,19 +251,21 @@ def print_err(type_, cmd):
         print(f"{cmd} is not a recognized command.")
 
 
-def read_log():
-    if not os.path.exists(os.path.realpath(LOGFILE)):
-        print(f"No log file at \"{os.path.realpath(LOGFILE)}\".")
-        print(f"Creating log file at \"{os.path.realpath(LOGFILE)}\".")
-        write_pickle({})
-    with open(LOGFILE, "rb") as file:
-        log = pickle.load(file)
-    return log
+def print_average(exec_dict):
+    log = read_log()
+    all_pages = []
+    for _, day_log in log.items():
+        pages_on_day = 0
+        for _, pages in day_log.items():
+            pages_on_day += pages
+        all_pages.append(pages_on_day)
+    avg = int(statistics.fmean(all_pages))
+    print(f"You read an average of {avg} pages a day.")
 
 
-def write_pickle(data):
-    with open(LOGFILE, "wb") as file:
-        pickle.dump(data, file)
+################
+# COMMANDS MAP #
+################
 
 
 CMDS = {
@@ -275,6 +273,65 @@ CMDS = {
         "dump": dump_to_vimwiki,
         "export-csv": export_csv
         }
+
+###################
+# READING/WRITING #
+###################
+
+
+def read_pickle(path, create_if_not_exist=True, default_data={}):
+    if not os.path.exists(path):
+        print(f"\"{path}\" does not exist.")
+        if not create_if_not_exist:
+            return
+        print(f"Writing new \"{path}\".")
+        write_pickle(path, {})
+    with open(path, "rb") as file:
+        unpickled = pickle.load(file)
+    return unpickled
+
+
+def write_pickle(path, data):
+    '''Write `data` to pickle file at `path`.'''
+    with open(path, "wb") as file:
+        pickle.dump(data, file)
+
+
+def read_log():
+    '''Convenience wrapper for read_pickle(log).'''
+    path = os.path.realpath(LOGFILE)
+    return read_pickle(path)
+
+
+def read_cache():
+    '''Convenience wrapper for read_pickle(cache).'''
+    path = os.path.realpath(CACHE)
+    default = default_cache()
+    return read_pickle(path, default_data=default)
+
+
+def write_log(data):
+    '''Convenience wrapper for write_pickle(log).'''
+    path = os.path.realpath(LOGFILE)
+    write_pickle(path)
+
+
+def write_cache(data):
+    '''Convenience wrapper for write_pickle(cache).'''
+    path = os.path.realpath(CACHE)
+    write_pickle(path)
+
+
+def write_csv(rows, path=None):
+    filename = f"{timestamp()}_reading_stats.csv"
+    if path is None:
+        path = os.path.join(CSV_OUT, filename)
+    else:
+        path = os.path.join(path, filename)
+    with open(path, "w+") as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
+
 
 if __name__ == "__main__":
     main()
