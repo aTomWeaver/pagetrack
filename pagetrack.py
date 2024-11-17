@@ -16,7 +16,7 @@ VIMWIKI_LOC = os.path.realpath("out/vimwiki")
 APPDATA_MOCK = {
         "last_read": "Capital",
         "last_action": {
-            "command": "",
+            "type": "",
             "title": "",
             "pagenum": "",
             "date": ""
@@ -141,15 +141,13 @@ def execute(exec_dict):
             print("No pages given.")
             exit()
     if title is None:
-        # TODO: fetch last title from appdata
-        title = "unknown title"
+        title = read_cache()["last_read"]
     if date is None:
         date = timestamp()
     add_entry(date, pagenum, title)
 
 
 def add_entry(date, pagenum, title):
-    print("Adding")
     log = read_log()
     if date not in log:
         log[date] = {}
@@ -158,7 +156,13 @@ def add_entry(date, pagenum, title):
     else:
         log[date][title] += pagenum
     write_log(log)
-    print(read_log())
+    update_cache(last_read=title,
+                 last_action={"type": "add",
+                              "date": date,
+                              "pagenum": pagenum,
+                              "title": title})
+    print(f"Added {pagenum} pages of \"{title}\" for {date}.\n")
+    print_record(date)
 
 
 def print_record(date_):
@@ -167,15 +171,17 @@ def print_record(date_):
         print(f"No records from {date_}.")
         return
     max_title_len = get_max_length(log[date_])
+    divider = "-" * max_title_len
     total_pages = 0
+    print(date_)
+    print(divider)
     for title, pages in log[date_].items():
         spacing = (max_title_len - len(title) + 2) * " "
         print(f"{title}{spacing}{pages}")
         total_pages += pages
-    divider = "-" * max_title_len
     spacing = (max_title_len - len("total:") + 2) * " "
     print(divider)
-    print(f"\ntotal:{spacing}{total_pages}")
+    print(f"total:{spacing}{total_pages}")
 
 
 def get_max_length(day_entry):
@@ -231,7 +237,7 @@ def default_cache():
     default = {
         "last_read": "unknown title",
         "last_action": {
-            "command": None,
+            "type": None,
             "title": None,
             "pagenum": None,
             "date": None
@@ -285,7 +291,7 @@ def read_pickle(path, create_if_not_exist=True, default_data={}):
         if not create_if_not_exist:
             return
         print(f"Writing new \"{path}\".")
-        write_pickle(path, {})
+        write_pickle(path, default_data)
     with open(path, "rb") as file:
         unpickled = pickle.load(file)
     return unpickled
@@ -303,6 +309,12 @@ def read_log():
     return read_pickle(path)
 
 
+def write_log(data):
+    '''Convenience wrapper for write_pickle(log).'''
+    path = os.path.realpath(LOGFILE)
+    write_pickle(path, data)
+
+
 def read_cache():
     '''Convenience wrapper for read_pickle(cache).'''
     path = os.path.realpath(CACHE)
@@ -310,16 +322,19 @@ def read_cache():
     return read_pickle(path, default_data=default)
 
 
-def write_log(data):
-    '''Convenience wrapper for write_pickle(log).'''
-    path = os.path.realpath(LOGFILE)
-    write_pickle(path)
-
-
 def write_cache(data):
     '''Convenience wrapper for write_pickle(cache).'''
     path = os.path.realpath(CACHE)
-    write_pickle(path)
+    write_pickle(path, data)
+
+
+def update_cache(last_read=None, last_action=None):
+    cache = read_cache()
+    if last_read is not None:
+        cache["last_read"] = last_read
+    if last_action is not None:
+        cache["last_action"] = last_action
+    write_cache(cache)
 
 
 def write_csv(rows, path=None):
